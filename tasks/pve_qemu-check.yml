@@ -4,5 +4,7 @@
   fail:
     msg: "{{ item }} is undefined"
   loop:
-    - pve_qemu.state
     - pve_qemu.vmid
+    - pve_qemu.name
+    - pve_qemu.state
+    - pve_qemu.template_id
