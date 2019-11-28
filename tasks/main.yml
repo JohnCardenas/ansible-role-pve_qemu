@@ -6,6 +6,7 @@
     msg: "{{ item }} is undefined"
   loop:
     - pve_qemu.vmid
+    - pve_qemu.name
     - pve_qemu.state
 
 - name: Get Cluster Resources
@@ -18,10 +19,10 @@
     - pve_qemu.state == 'absent'
     - resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first is defined
   block:
-    - name: Resolve Hosting Node
+    - name: "Resolve Node Hosting {{ pve_qemu.name }}"
       set_fact:
         host_node: "{{ (resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first)['node'] }}"
-    - name: "Delete {{ pve_qemu.name }} VM"
+    - name: "Delete {{ pve_qemu.name }}"
       shell: "/usr/bin/pvesh delete /nodes/{{pve_qemu.target_node}}/qemu/{{pve_qemu.vmid}}"
 
 - name: "Scenario: Clone VM from Template"
@@ -34,13 +35,12 @@
       fail:
         msg: "{{ item }} is undefined"
       loop:
-        - pve_qemu.name
         - pve_qemu.template_id
         - pve_qemu.target_host
         - pve_qemu.pool
     - name: "Create {{ pve_qemu.name }} from Template"
       shell: "/usr/bin/pvesh create /nodes/{{ansible_hostname}}/qemu/{{pve_qemu.template_id}}/clone -newid {{pve_qemu.vmid}} -name {{pve_qemu.name}} -full {{pve_qemu.full_clone|default('false')}} -target {{pve_qemu.target_node}} -pool {{pve_qemu.pool}}"
-    - name: "Set VM Description"
+    - name: "Set {{ pve_qemu.name }} Description"
       when: pve_qemu.description is defined
       shell: "/usr/bin/pvesh set /nodes/{{pve_qemu.target_node}}/qemu/{{pve_qemu.vmid}}/config -description \"{{pve_qemu.description}}\""
 
@@ -49,18 +49,18 @@
   register: resources
   changed_when: false
 
-- name: Resolve Hosting Node
+- name: "Resolve Node Hosting {{ pve_qemu.name }}"
   set_fact:
     host_node: "{{ (resources.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first)['node'] }}"
 
 - name: "Scenario: Update Configuration"
   when: pve_qemu.state != 'absent'
   block:
-    - name: Get VM Configuration
+    - name: "Get {{ pve_qemu.name }} Configuration"
       shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/config --output-format json"
       register: vm_config
       changed_when: false
-    - name: Set Configuration Values
+    - name: "Set {{ pve_qemu.name }} Configuration"
       when:
         - (vm_config.stdout|from_json)[item.key] is undefined or ((vm_config.stdout|from_json)[item.key]) != item.value
       shell: "/usr/bin/pvesh set /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/config -{{item.key}} \"{{item.value}}\""
@@ -70,10 +70,10 @@
 - name: "Scenario: Start VM"
   when: pve_qemu.state == 'started'
   block:
-    - name: Get VM Status
+    - name: "Get {{ pve_qemu.name }} Status"
       shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/current --output-format json"
       register: vm_status
       changed_when: false
-    - name: Start VM
+    - name: "Start {{ pve_qemu.name }}"
       when: (vm_status.stdout|from_json)['status'] != 'running'
       shell: "/usr/bin/pvesh create /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/start"
