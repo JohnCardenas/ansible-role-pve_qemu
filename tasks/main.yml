@@ -75,5 +75,5 @@
       register: vm_status
       changed_when: false
     - name: Start VM
-      when: (vm_status.stdout|from_json).status != 'running'
+      when: (vm_status.stdout|from_json)['status'] != 'running'
       shell: "/usr/bin/pvesh create /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/start"
