@@ -1,0 +1,8 @@
+---
+- name: Check Required Variables
+  when: item is undefined
+  fail:
+    msg: "{{ item }} is undefined"
+  loop:
+    - pve_qemu.state
+    - pve_qemu.vmid
