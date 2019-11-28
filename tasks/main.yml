@@ -9,7 +9,7 @@
     - pve_qemu.state
 
 - name: Get Cluster Resources
-  shell: "pvesh get /cluster/resources -type=vm --output-format json"
+  shell: "/usr/bin/pvesh get /cluster/resources -type=vm --output-format json"
   register: resources_initial
   changed_when: false
 
@@ -45,7 +45,7 @@
       shell: "/usr/bin/pvesh set /nodes/{{pve_qemu.target_node}}/qemu/{{pve_qemu.vmid}}/config -description \"{{pve_qemu.description}}\""
 
 - name: Get Cluster Resources
-  shell: "pvesh get /cluster/resources -type=vm --output-format json"
+  shell: "/usr/bin/pvesh get /cluster/resources -type=vm --output-format json"
   register: resources
   changed_when: false
 
@@ -57,7 +57,7 @@
   when: pve_qemu.state != 'absent'
   block:
     - name: Get VM Configuration
-      shell: "pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/config --output-format json"
+      shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/config --output-format json"
       register: vm_config
       changed_when: false
     - name: Set Configuration Values
@@ -71,7 +71,7 @@
   when: pve_qemu.state == 'started'
   block:
     - name: Get VM Status
-      shell: "pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status --output-format json"
+      shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/current --output-format json"
       register: vm_status
       changed_when: false
     - name: Start VM
