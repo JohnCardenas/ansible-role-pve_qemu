@@ -8,10 +8,14 @@
 - name: Get Cluster Resources
   shell: "pvesh get /cluster/resources -type=vm --output-format json"
   register: resources
-  
+  changed_when: false
+
+- debug:
+    msg: "{{ resources.stdout }}"
+
 - import_tasks: pve_qemu-provision_clone.yml
   when:
     - pve_qemu.template_id is defined
-    - pve_qemu.vmid|string in resources.stdout
+    - pve_qemu.vmid|string not in resources.stdout
   tags:
     - pve_qemu:provision
