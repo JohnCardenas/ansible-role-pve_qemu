@@ -27,9 +27,8 @@
   changed_when: false
 
 - name: Set Configuration Values
-  when:
-    - (vm_config.stdout|from_json)[item.key] != item.value
+  when: (vm_config.stdout|from_json)[item.key] is undefined or (vm_config.stdout|from_json)[item.key] != item.value
   shell: "/usr/bin/pvesh set /nodes/{{pve_qemu.target_node}}/qemu/{{pve_qemu.vmid}}/config -{{item.key}} {{item.value}}"
   register: config_result
   failed_when: config_result.rc != 0 and config_result.rc != 255
-  with_items: pve_qemu.config
+  with_items: "{{ pve_qemu.config|default([]) }}"
