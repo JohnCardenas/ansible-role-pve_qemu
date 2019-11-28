@@ -17,9 +17,14 @@
   register: resources
   changed_when: false
 
-- name: "Create {{ pve_qemu.name }} from Template"
+- name: Clone VM from Template
   when: resources.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first is not defined
-  shell: "/usr/bin/pvesh create /nodes/{{ansible_hostname}}/qemu/{{pve_qemu.template_id}}/clone -newid {{pve_qemu.vmid}} -name {{pve_qemu.name}} -full {{pve_qemu.full_clone|default('false')}} -target {{pve_qemu.target_node}} -pool {{pve_qemu.pool}}"
+  block:
+    - name: "Create {{ pve_qemu.name }} from Template"
+      shell: "/usr/bin/pvesh create /nodes/{{ansible_hostname}}/qemu/{{pve_qemu.template_id}}/clone -newid {{pve_qemu.vmid}} -name {{pve_qemu.name}} -full {{pve_qemu.full_clone|default('false')}} -target {{pve_qemu.target_node}} -pool {{pve_qemu.pool}}"
+    - name: "Set VM Description"
+      when: pve_qemu.description is defined
+      shell: "/usr/bin/pvesh set /nodes/{{pve_qemu.target_node}}/qemu/{{pve_qemu.vmid}}/config -description \"{{pve_qemu.description}}\""
 
 - name: Get VM Configuration
   shell: "pvesh get /nodes/{{pve_qemu.target_node}}/qemu/{{pve_qemu.vmid}}/config --output-format json"
