@@ -26,8 +26,14 @@
   register: vm_config
   changed_when: false
 
+- debug:
+    msg: "{{ ((vm_config.stdout|from_json)[item.key])|e }}"
+
+- debug:
+    msg: "{{ item.value }}"
+
 - name: Set Configuration Values
   when: (vm_config.stdout|from_json)[item.key] is undefined or ((vm_config.stdout|from_json)[item.key])|e != item.value
-  shell: "/usr/bin/pvesh set /nodes/{{pve_qemu.target_node}}/qemu/{{pve_qemu.vmid}}/config -{{item.key}} \"{{item.value}}\""
+  shell: "/usr/bin/pvesh set /nodes/{{pve_qemu.target_node}}/qemu/{{pve_qemu.vmid}}/config -{{item.key}} \"{{item.value|e}}\""
   register: config_result
   with_items: "{{ pve_qemu.config|default([]) }}"
