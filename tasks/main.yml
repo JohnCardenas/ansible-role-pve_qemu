@@ -28,9 +28,11 @@
 
 - debug:
     msg: "{{ ((vm_config.stdout|from_json)[item.key])|e }}"
+  with_items: "{{ pve_qemu.config|default([]) }}"
 
 - debug:
     msg: "{{ item.value }}"
+  with_items: "{{ pve_qemu.config|default([]) }}"
 
 - name: Set Configuration Values
   when: (vm_config.stdout|from_json)[item.key] is undefined or ((vm_config.stdout|from_json)[item.key])|e != item.value
