@@ -16,6 +16,6 @@
 - import_tasks: pve_qemu-provision_clone.yml
   when:
     - pve_qemu.template_id is defined
-    - pve_qemu.vmid|string not in resources.stdout
+    - resources.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first is not defined
   tags:
     - pve_qemu:provision
