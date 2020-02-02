@@ -36,16 +36,3 @@
     - name: "Start {{ pve_qemu.name }}"
       when: (vm_status.stdout|from_json)['status'] != 'running'
       shell: "/usr/bin/pvesh create /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/start"
-
-- name: "Stop VM"
-  when:
-    - pve_qemu.state == 'stopped'
-    - ansible_hostname == host_node
-  block:
-    - name: "Get {{ pve_qemu.name }} Status"
-      shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/current --output-format json"
-      register: vm_status
-      changed_when: false
-    - name: "Start {{ pve_qemu.name }}"
-      when: (vm_status.stdout|from_json)['status'] != 'running'
-      shell: "/usr/bin/pvesh create /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/stop"
