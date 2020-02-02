@@ -11,7 +11,7 @@
 - name: "Update Configuration"
   when:
     - pve_qemu.state != 'absent'
-    - inventory_hostname == host_node
+    - ansible_hostname == host_node
   block:
     - name: "Get {{ pve_qemu.name }} Configuration"
       shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/config --output-format json"
@@ -27,7 +27,7 @@
 - name: "Start VM"
   when:
     - pve_qemu.state == 'started'
-    - inventory_hostname == host_node
+    - ansible_hostname == host_node
   block:
     - name: "Get {{ pve_qemu.name }} Status"
       shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/current --output-format json"
@@ -40,7 +40,7 @@
 - name: "Stop VM"
   when:
     - pve_qemu.state == 'stopped'
-    - inventory_hostname == host_node
+    - ansible_hostname == host_node
   block:
     - name: "Get {{ pve_qemu.name }} Status"
       shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/current --output-format json"
