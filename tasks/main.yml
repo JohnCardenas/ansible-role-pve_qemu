@@ -1,34 +1,19 @@
 ---
 # tasks file for pve_qemu
-- import_tasks: check.yml
-  tags:
-    - check
-    - pve_qemu
-    - pve_qemu:check
-
-- import_tasks: init.yml
-  tags:
-    - pve_qemu
-    - pve_qemu:init
+- name: Get Initial Cluster Resources
+  shell: "/usr/bin/pvesh get /cluster/resources -type=vm --output-format json"
+  register: resources_initial
+  changed_when: false
 
 - import_tasks: destroy.yml
   when:
     - pve_qemu.state == 'absent'
-    - resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first is defined
-  tags:
-    - pve_qemu
-    - pve_qemu:destroy
+    - (resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first) is defined
 
 - import_tasks: clone.yml
   when:
     - pve_qemu.state != 'absent'
-    - resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first is not defined
-  tags:
-    - pve_qemu
-    - pve_qemu:clone
+    - (resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first) is not defined
 
 - import_tasks: configuration.yml
   when: pve_qemu.state != 'absent'
-  tags:
-    - pve_qemu
-    - pve_qemu:configuration

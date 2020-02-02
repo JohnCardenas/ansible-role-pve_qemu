@@ -1,8 +1,11 @@
 ---
-- name: "Resolve Node Hosting {{ pve_qemu.name }}"
-  set_fact:
-    host_node: "{{ (resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first)['node'] }}"
+- name: "Destroy VMID {{ pve_qemu.vmid }}"
+  when: "{{ (resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first) is defined }}"
+  block:
+    - name: "Resolve Node Hosting {{ pve_qemu.vmid }}"
+      set_fact:
+        host_node: "{{ (resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first)['node'] }}"
 
-- name: "Delete {{ pve_qemu.name }}"
-  when: inventory_hostname == host_node
-  shell: "/usr/bin/pvesh delete /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}"
+    - name: "Delete {{ pve_qemu.vmid }}"
+      when: ansible_hostname == host_node
+      shell: "/usr/bin/pvesh delete /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}"
