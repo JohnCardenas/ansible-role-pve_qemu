@@ -1,8 +1,14 @@
 ---
-- name: "Resolve Node Hosting {{ pve_qemu.vmid }}"
+- name: "Resolve Node Hosting #{{ pve_qemu.vmid }}"
   set_fact:
     host_node: "{{ (resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first)['node'] }}"
 
-- name: "Delete {{ pve_qemu.vmid }}"
+- name: "Stop #{{ pve_qemu.vmid }}"
+  when:
+    - ansible_hostname == host_node
+    - (resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first)['status'] == 'running'
+  shell: "/usr/bin/pvesh create /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/stop"
+
+- name: "Delete #{{ pve_qemu.vmid }}"
   when: ansible_hostname == host_node
   shell: "/usr/bin/pvesh delete /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}"
