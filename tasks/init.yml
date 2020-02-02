@@ -1,0 +1,5 @@
+---
+- name: Get Initial Cluster Resources
+  shell: "/usr/bin/pvesh get /cluster/resources -type=vm --output-format json"
+  register: resources_initial
+  changed_when: false

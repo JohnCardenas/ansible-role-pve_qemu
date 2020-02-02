@@ -1,0 +1,15 @@
+---
+# - name: Check Required Variables
+#   when: item is undefined
+#   fail:
+#     msg: "{{ item }} is undefined"
+#   loop:
+#     - pve_qemu.vmid
+#     - pve_qemu.name
+#     - pve_qemu.state
+#     - pve_qemu.template_host
+
+- name: Get Initial Cluster Resources
+  shell: "/usr/bin/pvesh get /cluster/resources -type=vm --output-format json"
+  register: resources_initial
+  changed_when: false

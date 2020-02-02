@@ -1,0 +1,51 @@
+---
+- name: Get Cluster Resources
+  shell: "/usr/bin/pvesh get /cluster/resources -type=vm --output-format json"
+  register: resources
+  changed_when: false
+
+- name: "Resolve Node Hosting {{ pve_qemu.name }}"
+  set_fact:
+    host_node: "{{ (resources.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first)['node'] }}"
+
+- name: "Update Configuration"
+  when:
+    - pve_qemu.state != 'absent'
+    - inventory_hostname == host_node
+  block:
+    - name: "Get {{ pve_qemu.name }} Configuration"
+      shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/config --output-format json"
+      register: vm_config
+      changed_when: false
+    - name: "Set {{ pve_qemu.name }} Configuration"
+      when:
+        - (vm_config.stdout|from_json)[item.key] is undefined or ((vm_config.stdout|from_json)[item.key]) != item.value
+      shell: "/usr/bin/pvesh set /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/config -{{item.key}} \"{{item.value}}\""
+      register: config_result
+      with_items: "{{ pve_qemu.config|default([]) }}"
+
+- name: "Start VM"
+  when:
+    - pve_qemu.state == 'started'
+    - inventory_hostname == host_node
+  block:
+    - name: "Get {{ pve_qemu.name }} Status"
+      shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/current --output-format json"
+      register: vm_status
+      changed_when: false
+    - name: "Start {{ pve_qemu.name }}"
+      when: (vm_status.stdout|from_json)['status'] != 'running'
+      shell: "/usr/bin/pvesh create /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/start"
+
+- name: "Stop VM"
+  when:
+    - pve_qemu.state == 'stopped'
+    - inventory_hostname == host_node
+  block:
+    - name: "Get {{ pve_qemu.name }} Status"
+      shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/current --output-format json"
+      register: vm_status
+      changed_when: false
+    - name: "Start {{ pve_qemu.name }}"
+      when: (vm_status.stdout|from_json)['status'] != 'running'
+      shell: "/usr/bin/pvesh create /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/stop"

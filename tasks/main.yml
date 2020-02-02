@@ -1,79 +1,34 @@
 ---
 # tasks file for pve_qemu
-- name: Check Required Variables
-  when: item is undefined
-  fail:
-    msg: "{{ item }} is undefined"
-  loop:
-    - pve_qemu.vmid
-    - pve_qemu.name
-    - pve_qemu.state
+- import_tasks: check.yml
+  tags:
+    - check
+    - pve_qemu
+    - pve_qemu:check
 
-- name: Get Initial Cluster Resources
-  shell: "/usr/bin/pvesh get /cluster/resources -type=vm --output-format json"
-  register: resources_initial
-  changed_when: false
+- import_tasks: init.yml
+  tags:
+    - pve_qemu
+    - pve_qemu:init
 
-- name: "Scenario: Destroy VM"
+- import_tasks: destroy.yml
   when:
     - pve_qemu.state == 'absent'
     - resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first is defined
-  block:
-    - name: "Resolve Node Hosting {{ pve_qemu.name }}"
-      set_fact:
-        host_node: "{{ (resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first)['node'] }}"
-    - name: "Delete {{ pve_qemu.name }}"
-      shell: "/usr/bin/pvesh delete /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}"
+  tags:
+    - pve_qemu
+    - pve_qemu:destroy
 
-- name: "Scenario: Clone VM from Template"
+- import_tasks: clone.yml
   when:
     - pve_qemu.state != 'absent'
     - resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first is not defined
-  block:
-    - name: Check Required Variables to Clone VM from Template
-      when: item is undefined
-      fail:
-        msg: "{{ item }} is undefined"
-      loop:
-        - pve_qemu.template_id
-        - pve_qemu.target_host
-        - pve_qemu.pool
-    - name: "Create {{ pve_qemu.name }} from Template"
-      shell: "/usr/bin/pvesh create /nodes/{{ansible_hostname}}/qemu/{{pve_qemu.template_id}}/clone -newid {{pve_qemu.vmid}} -name {{pve_qemu.name}} -full {{pve_qemu.full_clone|default('false')}} -target {{pve_qemu.target_node}} -pool {{pve_qemu.pool}}"
-    - name: "Set {{ pve_qemu.name }} Description"
-      when: pve_qemu.description is defined
-      shell: "/usr/bin/pvesh set /nodes/{{pve_qemu.target_node}}/qemu/{{pve_qemu.vmid}}/config -description \"{{pve_qemu.description}}\""
+  tags:
+    - pve_qemu
+    - pve_qemu:clone
 
-- name: Get Cluster Resources
-  shell: "/usr/bin/pvesh get /cluster/resources -type=vm --output-format json"
-  register: resources
-  changed_when: false
-
-- name: "Resolve Node Hosting {{ pve_qemu.name }}"
-  set_fact:
-    host_node: "{{ (resources.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first)['node'] }}"
-
-- name: "Scenario: Update Configuration"
+- import_tasks: configuration.yml
   when: pve_qemu.state != 'absent'
-  block:
-    - name: "Get {{ pve_qemu.name }} Configuration"
-      shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/config --output-format json"
-      register: vm_config
-      changed_when: false
-    - name: "Set {{ pve_qemu.name }} Configuration"
-      when:
-        - (vm_config.stdout|from_json)[item.key] is undefined or ((vm_config.stdout|from_json)[item.key]) != item.value
-      shell: "/usr/bin/pvesh set /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/config -{{item.key}} \"{{item.value}}\""
-      register: config_result
-      with_items: "{{ pve_qemu.config|default([]) }}"
-
-- name: "Scenario: Start VM"
-  when: pve_qemu.state == 'started'
-  block:
-    - name: "Get {{ pve_qemu.name }} Status"
-      shell: "/usr/bin/pvesh get /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/current --output-format json"
-      register: vm_status
-      changed_when: false
-    - name: "Start {{ pve_qemu.name }}"
-      when: (vm_status.stdout|from_json)['status'] != 'running'
-      shell: "/usr/bin/pvesh create /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}/status/start"
+  tags:
+    - pve_qemu
+    - pve_qemu:configuration

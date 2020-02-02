@@ -1,0 +1,24 @@
+---
+# - name: Check Required Variables to Clone VM from Template
+#   when: item is undefined
+#   fail:
+#     msg: "{{ item }} is undefined"
+#   loop:
+#     - pve_qemu.template_id
+#     - pve_qemu.target_host
+#     - pve_qemu.pool
+
+- name: "Resolve Node Hosting Template ID {{ pve_qemu.template_id }}"
+  set_fact:
+    template_host: "{{ (resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.template_id) | first)['node'] }}"
+
+- name: "Create {{ pve_qemu.name }} from Template"
+  when: inventory_hostname == template_host
+  shell: "/usr/bin/pvesh create /nodes/{{ansible_hostname}}/qemu/{{pve_qemu.template_id}}/clone -newid {{pve_qemu.vmid}} -name {{pve_qemu.name}} -full {{pve_qemu.full_clone|default('false')}} -target {{pve_qemu.target_node}} -pool {{pve_qemu.pool}}"
+
+- name: "Set {{ pve_qemu.name }} Description"
+  when:
+    - pve_qemu.description is defined
+    - inventory_hostname == pve_qemu.target_node
+  shell: "/usr/bin/pvesh set /nodes/{{pve_qemu.target_node}}/qemu/{{pve_qemu.vmid}}/config -description \"{{pve_qemu.description}}\""
+ 

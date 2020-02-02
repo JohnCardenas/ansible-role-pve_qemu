@@ -1,0 +1,8 @@
+---
+- name: "Resolve Node Hosting {{ pve_qemu.name }}"
+  set_fact:
+    host_node: "{{ (resources_initial.stdout | from_json | selectattr('vmid', 'equalto', pve_qemu.vmid) | first)['node'] }}"
+
+- name: "Delete {{ pve_qemu.name }}"
+  when: inventory_hostname == host_node
+  shell: "/usr/bin/pvesh delete /nodes/{{host_node}}/qemu/{{pve_qemu.vmid}}"
